@@ -1,6 +1,10 @@
 import sys
 import pygame
 
+from Level import Level
+
+pygame.init()
+
 # Setup game window
 screen_size = screen_width, screen_height = 600, 400
 pygame.display.set_caption("Game Window")
@@ -10,6 +14,9 @@ screen = pygame.display.set_mode(screen_size)
 fps_limit = 60
 
 clock = pygame.time.Clock()
+
+level = Level(screen)
+# Level settings here (If any)
 
 game_loop_running = True
 while game_loop_running:
@@ -24,6 +31,7 @@ while game_loop_running:
 
     # Rendering (Base: White screen)
     screen.fill((255, 255, 255))
+    level.drawLevelRender()
 
     # Update game window
     pygame.display.flip()
