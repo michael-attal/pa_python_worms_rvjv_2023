@@ -1,27 +1,23 @@
 import sys
 import pygame
-from Entities import physicsobject
+import gamemanager
+from GameObjects import physicsobject
 from Environment import platform
 
 # Setup game window
 pygame.init()
-screen_size = screen_width, screen_height = 600, 400
 pygame.display.set_caption("Game Window")
-screen = pygame.display.set_mode(screen_size)
 
 # Set FPS here
 fps_limit = 60
 
-clock = pygame.time.Clock()
-
 # Setup game
-worm = physicsobject.Worm(clock, screen_width / 2, 10)
-worm_sprites = pygame.sprite.Group()
-worm_sprites.add(worm)
+worm = physicsobject.Worm(gamemanager.screen_width / 2, 10)
+team1_sprites = pygame.sprite.Group()
+team1_sprites.add(worm)
+gamemanager.teams.append(team1_sprites)
 
-platform = platform.Platform(0, screen_height - 10, screen_width, 5)
-platform_sprites = pygame.sprite.Group()
-platform_sprites.add(platform)
+gamemanager.terrain.add(platform.Platform(0, gamemanager.screen_height - 30, gamemanager.screen_width, 30))
 
 game_loop_running = True
 while game_loop_running:
@@ -31,22 +27,37 @@ while game_loop_running:
         if event.type == pygame.QUIT:
             game_loop_running = False
 
-    worm_sprites.update()
-    for sprite in platform_sprites.sprites():
-        collided = pygame.sprite.spritecollide(sprite, worm_sprites, False)
-        for collidedWorm in collided:
-            collidedWorm.handleCollision(sprite)
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_s:
+                gamemanager.neutral_gameobjects.add(physicsobject.Rocket(0, gamemanager.screen_height - 64))
 
     # Rendering (Base: White screen)
-    screen.fill((255, 255, 255))
-    platform_sprites.draw(screen)
-    worm_sprites.draw(screen)
+    gamemanager.screen.fill((255, 255, 255))
+    gamemanager.terrain.draw(gamemanager.screen)
+    for team in gamemanager.teams:
+        team.draw(gamemanager.screen)
+    gamemanager.neutral_gameobjects.draw(gamemanager.screen)
+
+    # Players loop
+    for team in gamemanager.teams:
+        team.update()
+        for sprite in gamemanager.terrain.sprites():
+            collided = pygame.sprite.spritecollide(sprite, team, False)
+            for collidedWorm in collided:
+                collidedWorm.handleCollision(sprite)
+
+    # Other entities loop
+    gamemanager.neutral_gameobjects.update()
+    for sprite in gamemanager.terrain.sprites():
+        collided = pygame.sprite.spritecollide(sprite, gamemanager.neutral_gameobjects, False)
+        for collidedEntity in collided:
+            collidedEntity.handleCollision(sprite)
 
     # Update game window
     pygame.display.flip()
 
-    # Ticking game logic (I think? Not quite sure how this works yet)
-    clock.tick(fps_limit)
+    # Tick game logic
+    gamemanager.clock.tick(fps_limit)
 
 pygame.quit()
 sys.exit()
