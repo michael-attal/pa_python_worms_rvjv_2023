@@ -12,12 +12,17 @@ pygame.display.set_caption("Game Window")
 fps_limit = 60
 
 # Setup game
-worm = physicsobject.Worm(gamemanager.screen_width / 2, 10)
+worm1 = physicsobject.Worm(gamemanager.screen_width / 4, 10)
 team1_sprites = pygame.sprite.Group()
-team1_sprites.add(worm)
+team1_sprites.add(worm1)
+worm2 = physicsobject.Worm(3 * gamemanager.screen_width / 4, 10)
+team2_sprites = pygame.sprite.Group()
+team2_sprites.add(worm2)
 gamemanager.teams.append(team1_sprites)
-
+gamemanager.teams.append(team2_sprites)
 gamemanager.terrain.add(platform.Platform(0, gamemanager.screen_height - 30, gamemanager.screen_width, 30))
+
+gamemanager.nextTurn()
 
 game_loop_running = True
 while game_loop_running:
@@ -27,9 +32,9 @@ while game_loop_running:
         if event.type == pygame.QUIT:
             game_loop_running = False
 
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_s:
-                gamemanager.neutral_gameobjects.add(physicsobject.Rocket(0, gamemanager.screen_height - 64))
+        for team in gamemanager.teams:
+            for worm in team:
+                worm.handleEvent(event)
 
     # Rendering (Base: White screen)
     gamemanager.screen.fill((255, 255, 255))

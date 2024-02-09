@@ -4,9 +4,6 @@ import gamemanager
 GRAVITY = pygame.Vector2(0, 9.8)
 
 class PhysicsObject(pygame.sprite.Sprite):
-
-    velocity = pygame.Vector2(0, 0)
-
     def _getPosition(self):
         return pygame.Vector2(self.rect.center[0], self.rect.center[1])
 
@@ -14,6 +11,7 @@ class PhysicsObject(pygame.sprite.Sprite):
 
     def __init__(self, x, y, frictionmod=0.01):
         super().__init__()
+        self.velocity = pygame.Vector2(0, 0)
         self.rect.x = x
         self.rect.y = y
         self.frictionmod = frictionmod
@@ -45,6 +43,7 @@ class PhysicsObject(pygame.sprite.Sprite):
             self.rect.bottom = platform.rect.top
 
         self.velocity.y = -self.velocity.y * platform.bounciness
+        self.velocity.x = self.velocity.x * (1 - platform.friction)
 
     # Calculates the effective radius of the rectangle compared to another point in space; In other words, the distance beetween the closest point of the rectangle and its center
     def calculateEffectiveRadius(self, point):
@@ -65,19 +64,22 @@ class Worm(PhysicsObject):
         self.image.fill(pygame.Color("brown"))
         self.rect = self.image.get_rect(topleft=(x, y))
         self.grounded = False
+        self.controlled = False
+        self.chargeTime = -1
         super().__init__(x, y)
 
     def update(self):
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT]:
-            self.velocity.x = -100
-        elif keys[pygame.K_RIGHT]:
-            self.velocity.x = 100
-        else:
-            self.velocity.x = 0
+        if self.controlled:
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_LEFT]:
+                self.velocity.x = -100
+            elif keys[pygame.K_RIGHT]:
+                self.velocity.x = 100
+            else:
+                self.velocity.x = 0
 
-        if keys[pygame.K_SPACE] and self.grounded:
-            self.velocity.y -= 250
+            if keys[pygame.K_SPACE] and self.grounded:
+                self.velocity.y -= 250
 
         self.grounded = False
 
@@ -87,27 +89,54 @@ class Worm(PhysicsObject):
         super().handleCollision(platform)
         self.grounded = True
 
+    def handleEvent(self, event):
+        if self.controlled and event.type == pygame.MOUSEBUTTONDOWN:
+            self.chargeTime = pygame.time.get_ticks()
+            self.shootDirection = (pygame.mouse.get_pos() - self.position).normalize()
+            self.controlled = False
+        if event.type == pygame.MOUSEBUTTONUP and self.chargeTime != -1:
+            rocket_pos = self.position + self.shootDirection * self.rect.width
+            force = (((pygame.time.get_ticks() - self.chargeTime) / 1000) / gamemanager.maximum_charge_time) * gamemanager.maximum_charge
+            gamemanager.neutral_gameobjects.add(Rocket(rocket_pos.x, rocket_pos.y, self.shootDirection * force))
+            self.chargeTime = -1
+
 class Rocket(PhysicsObject):
 
-    def __init__(self, x, y):
+    explode_time = -1
+
+    def __init__(self, x, y, velocity):
         self.image = pygame.Surface((8, 8))
         self.image.fill(pygame.Color("red"))
         self.rect = self.image.get_rect(topleft=(x, y))
-        self.velocity = pygame.Vector2(100, 0)
-
         super().__init__(x, y)
+        self.velocity = velocity
+
+
+    def update(self):
+        super().update()
+        self.velocity += gamemanager.wind
+
+        if self.explode_time != -1:
+            self.velocity = pygame.Vector2(0, 0)
+            time_since_explosion = pygame.time.get_ticks() - self.explode_time
+            if time_since_explosion / 1000.0 > gamemanager.explosions_duration:
+                self.kill()
+                gamemanager.nextTurn()
+                return
+            pygame.draw.circle(gamemanager.screen, pygame.Color("orange"), self.position, (1 - ((time_since_explosion / 1000.0) / gamemanager.explosions_duration)) * gamemanager.rocket_explosion_radius)
 
     def handleCollision(self, platform):
         super().handleCollision(platform)
 
-        pygame.draw.circle(gamemanager.screen, pygame.Color("orange"), self.position, gamemanager.rocket_explosion_radius)
+        # On initial collision
+        if self.explode_time == -1:
+            self.image = pygame.Surface((0, 0))
+            self.explode_time = pygame.time.get_ticks()
 
-        for team in gamemanager.teams:
-            for worm in team:
-                center_pos = pygame.Vector2(self.rect.center[0], self.rect.center[1])
-                eff_radius = worm.calculateEffectiveRadius(center_pos)
-                worm_center_pos = pygame.Vector2(worm.rect.center[0], worm.rect.center[1])
-                if gamemanager.rocket_explosion_radius + eff_radius > center_pos.distance_to(worm_center_pos):
-                    worm.kill()
-
-        self.kill()
+            for team in gamemanager.teams:
+                for worm in team:
+                    center_pos = pygame.Vector2(self.rect.center[0], self.rect.center[1])
+                    eff_radius = worm.calculateEffectiveRadius(center_pos)
+                    worm_center_pos = pygame.Vector2(worm.rect.center[0], worm.rect.center[1])
+                    if gamemanager.rocket_explosion_radius + eff_radius > center_pos.distance_to(worm_center_pos):
+                        worm.kill()
