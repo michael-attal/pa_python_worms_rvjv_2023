@@ -174,23 +174,21 @@ class Grenade(PhysicsObject):
     
         # Bounce off walls. Comment it out if you prefer to only block grenades from hitting the wall.
         w, h = pygame.display.get_surface().get_size()
-        calculated_width = w - self.rect.width
-        calculated_height = h - self.rect.height
-        if self.rect.left <= 0 or self.rect.right >= calculated_width:
+        if self.rect.left <= 0 or self.rect.right >= w:
             self.velocity.x = -backup_velocity_x * self.bounciness
             # Adjustment to ensure that the grenade is not "stuck" in the walls
             if self.rect.left < 0:
                 self.rect.left = 0
-            if self.rect.right > calculated_width:
-                self.rect.right = calculated_width
+            if self.rect.right > w:
+                self.rect.right = w
         
-        if self.rect.top <= 0 or self.rect.bottom >= calculated_height:
+        if self.rect.top <= 0 or self.rect.bottom >= h:
             self.velocity.y = -backup_velocity_y * self.bounciness
             # Adjustment to ensure that the grenade is not "stuck" in the ceiling or the floor
             if self.rect.top < 0:
                 self.rect.top = 0
-            if self.rect.bottom > calculated_height:
-                self.rect.bottom = calculated_height
+            if self.rect.bottom > h:
+                self.rect.bottom = h
             
         # Check if the grenade collide with a worm
         for team in gamemanager.teams:
