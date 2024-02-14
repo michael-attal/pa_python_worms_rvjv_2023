@@ -10,10 +10,14 @@ neutral_gameobjects = pygame.sprite.Group()
 terrain = pygame.sprite.Group()
 clock = pygame.time.Clock()
 wind = pygame.Vector2(0, 0)
+worm_bounciness = 1
+grenade_bounciness = 1
 maximum_charge_time = 1
 maximum_charge = 1000
 rocket_explosion_radius = 100
 explosions_duration = .5
+grenade_explosion_radius = 50
+grenade_nb_of_seconds_before_explosion = 2
 
 def nextTurn():
     # Check game ending conditions
