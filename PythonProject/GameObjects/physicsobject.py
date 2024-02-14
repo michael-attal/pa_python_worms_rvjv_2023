@@ -176,7 +176,7 @@ class Grenade(PhysicsObject):
         w, h = pygame.display.get_surface().get_size()
         calculated_width = w - self.rect.width
         calculated_height = h - self.rect.height
-        if self.rect.left < 0 or self.rect.right > calculated_width:
+        if self.rect.left <= 0 or self.rect.right >= calculated_width:
             self.velocity.x = -backup_velocity_x * self.bounciness
             # Adjustment to ensure that the grenade is not "stuck" in the walls
             if self.rect.left < 0:
@@ -184,7 +184,7 @@ class Grenade(PhysicsObject):
             if self.rect.right > calculated_width:
                 self.rect.right = calculated_width
         
-        if self.rect.top < 0 or self.rect.bottom > calculated_height:
+        if self.rect.top <= 0 or self.rect.bottom >= calculated_height:
             self.velocity.y = -backup_velocity_y * self.bounciness
             # Adjustment to ensure that the grenade is not "stuck" in the ceiling or the floor
             if self.rect.top < 0:
