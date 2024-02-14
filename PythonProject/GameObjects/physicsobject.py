@@ -167,29 +167,18 @@ class Grenade(PhysicsObject):
         backup_velocity_x = self.velocity.x
         backup_velocity_y = self.velocity.y
         super().update()
-    
+
         # Check if the timer has expired
         if pygame.time.get_ticks() - self.explode_time > gamemanager.grenade_nb_of_seconds_before_explosion * 1000:
             self.explode()
-    
+
         # Bounce off walls. Comment it out if you prefer to only block grenades from hitting the wall.
         w, h = pygame.display.get_surface().get_size()
         if self.rect.left <= 0 or self.rect.right >= w:
             self.velocity.x = -backup_velocity_x * self.bounciness
-            # Adjustment to ensure that the grenade is not "stuck" in the walls
-            if self.rect.left < 0:
-                self.rect.left = 0
-            if self.rect.right > w:
-                self.rect.right = w
-        
         if self.rect.top <= 0 or self.rect.bottom >= h:
             self.velocity.y = -backup_velocity_y * self.bounciness
-            # Adjustment to ensure that the grenade is not "stuck" in the ceiling or the floor
-            if self.rect.top < 0:
-                self.rect.top = 0
-            if self.rect.bottom > h:
-                self.rect.bottom = h
-            
+
         # Check if the grenade collide with a worm
         for team in gamemanager.teams:
             for worm in team:
@@ -214,7 +203,7 @@ class Grenade(PhysicsObject):
         # Adjust the position of the grenade upon collision with any element to prevent it from being blocked.
         while pygame.sprite.collide_rect(self, collided_with):
             self.adjust_position_after_collision(collided_with)
-    
+
         if isinstance(collided_with, Worm):
                 self.velocity.y *= -1 * bounciness * self.bounciness
                 self.velocity.x *= -1 * bounciness * self.bounciness
@@ -231,7 +220,7 @@ class Grenade(PhysicsObject):
         # Calculation of the combined width and height of the two rectangles to determine collision.
         combined_half_width = (self.rect.width + collided_with.rect.width) / 2
         combined_half_height = (self.rect.height + collided_with.rect.height) / 2
-    
+
         if abs(delta_x) / combined_half_width < abs(delta_y) / combined_half_height:
             # Adjust vertical collision rect offset
             if delta_y > 0:  # From the top
@@ -244,4 +233,3 @@ class Grenade(PhysicsObject):
                 self.rect.x = collided_with.rect.x + collided_with.rect.width
             else:
                 self.rect.x = collided_with.rect.x - self.rect.width
- 
