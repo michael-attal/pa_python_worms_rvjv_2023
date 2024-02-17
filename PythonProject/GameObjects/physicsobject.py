@@ -70,7 +70,7 @@ class Worm(PhysicsObject):
         super().__init__(x, y)
 
     def update(self):
-        if self.controlled:
+        if self.controlled and self.grounded:
             keys = pygame.key.get_pressed()
             if keys[pygame.K_LEFT] or keys[pygame.K_q]:
                 self.velocity.x = -100
@@ -79,7 +79,7 @@ class Worm(PhysicsObject):
             else:
                 self.velocity.x = 0
 
-            if keys[pygame.K_SPACE] and self.grounded:
+            if keys[pygame.K_SPACE]:
                 self.velocity.y -= 250
 
         self.grounded = False
@@ -114,14 +114,13 @@ class Worm(PhysicsObject):
 
 class Rocket(PhysicsObject):
 
-    explode_time = -1
-
     def __init__(self, x, y, velocity):
         self.image = pygame.Surface((8, 8))
         self.image.fill(pygame.Color("red"))
         self.rect = self.image.get_rect(topleft=(x, y))
         super().__init__(x, y)
         self.velocity = velocity
+        self.explode_time = -1
 
 
     def update(self):
@@ -160,16 +159,27 @@ class Grenade(PhysicsObject):
         self.rect = self.image.get_rect(topleft=(x, y))
         super().__init__(x, y)
         self.velocity = velocity
+        self.explode_time = -1
         self.bounciness = gamemanager.grenade_bounciness
-        self.explode_time = pygame.time.get_ticks()
+        self.thrown_time = pygame.time.get_ticks()
 
     def update(self):
         backup_velocity_x = self.velocity.x
         backup_velocity_y = self.velocity.y
         super().update()
 
-        # Check if the timer has expired
-        if pygame.time.get_ticks() - self.explode_time > gamemanager.grenade_nb_of_seconds_before_explosion * 1000:
+        if self.explode_time != -1:
+            self.velocity = pygame.Vector2(0, 0)
+            time_since_explosion = pygame.time.get_ticks() - self.explode_time
+            if time_since_explosion / 1000.0 > gamemanager.explosions_duration:
+                self.kill()
+                gamemanager.nextTurn()
+                return
+            pygame.draw.circle(gamemanager.screen, pygame.Color("orange"), self.position, (1 - ((time_since_explosion / 1000.0) / gamemanager.explosions_duration)) * gamemanager.grenade_explosion_radius)
+
+
+        # Check if the grenade hasn't already exploded and the timer has expired
+        if self.explode_time == -1 and pygame.time.get_ticks() - self.thrown_time > gamemanager.grenade_nb_of_seconds_before_explosion * 1000:
             self.explode()
 
         # Bounce off walls. Comment it out if you prefer to only block grenades from hitting the wall.
@@ -186,9 +196,8 @@ class Grenade(PhysicsObject):
                     self.handleCollision(worm)
 
     def explode(self):
-        self.kill()
-        explosion_radius = gamemanager.grenade_explosion_radius
-        pygame.draw.circle(gamemanager.screen, pygame.Color("orange"), self.position, explosion_radius)
+        self.explode_time = pygame.time.get_ticks();
+        self.image = pygame.Surface((0, 0));
         for team in gamemanager.teams:
             for worm in team:
                 center_pos = pygame.Vector2(self.rect.center[0], self.rect.center[1])
@@ -196,7 +205,6 @@ class Grenade(PhysicsObject):
                 worm_center_pos = pygame.Vector2(worm.rect.center[0], worm.rect.center[1])
                 if gamemanager.grenade_explosion_radius + eff_radius > center_pos.distance_to(worm_center_pos):
                     worm.kill()
-        gamemanager.nextTurn()
 
     def handleCollision(self, collided_with):
         bounciness = getattr(collided_with, 'bounciness', 1)  # if bounciness doesn't exist set 1 by default
@@ -210,7 +218,8 @@ class Grenade(PhysicsObject):
         # Grenade collided with the platform, so I need to adjust its bounciness since 0.1 is not satisfactory to me.
         else:
             self.velocity.y *= -1 * bounciness * self.bounciness * 5
-            self.velocity.x *= -1 * bounciness * self.bounciness * 5
+            # We only have a horizontal plateform for now, so the grenade will never bounce horizontally.
+            # self.velocity.x *= -1 * bounciness * self.bounciness * 5
 
     def adjust_position_after_collision(self, collided_with):
         # Calculation of the position difference between the center of the Grenade and the object with which it collides.
