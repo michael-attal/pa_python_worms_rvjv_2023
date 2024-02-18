@@ -86,7 +86,6 @@ class Worm(PhysicsObject):
         if self.chargeTime != -1:
             pos0 = self.position + self.shootDirection * self.rect.width
             f0 = self.shootDirection * min((((pygame.time.get_ticks() - self.chargeTime) / 1000) / gamemanager.maximum_charge_time) * gamemanager.maximum_charge, gamemanager.maximum_charge)
-            print(f0)
 
             posList = []
             for t in range(0, 1000):
@@ -265,7 +264,7 @@ class Grenade(PhysicsObject):
                 worm_center_pos = pygame.Vector2(worm.rect.center[0], worm.rect.center[1])
                 if gamemanager.grenade_explosion_radius + eff_radius > center_pos.distance_to(worm_center_pos):
                     rangeCoef = 1 - center_pos.distance_to(worm_center_pos) / (gamemanager.grenade_explosion_radius + eff_radius)
-                    worm.health -= rangeCoef * gamemanager.grenade_explosion_radius
+                    worm.health -= rangeCoef * gamemanager.grenade_max_damage
                     worm.velocity += rangeCoef * gamemanager.grenade_max_force * (worm_center_pos - center_pos).normalize()
 
     def handleCollision(self, collided_with):

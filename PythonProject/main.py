@@ -26,8 +26,12 @@ def drawUI():
 
 
 # Ask for parameters
-num_teams = int(input("How many teams?"))
-num_worms = int(input("How many worms per team?"))
+num_teams = int(input("How many teams? "))
+if (num_teams <= 1):
+    sys.exit()
+num_worms = int(input("How many worms per team? "))
+if (num_worms <= 0):
+    sys.exit()
 
 # Setup game window
 pygame.init()
