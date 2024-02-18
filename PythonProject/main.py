@@ -4,6 +4,27 @@ import gamemanager
 from GameObjects import physicsobject
 from Environment import platform
 
+def drawUI():
+    if pygame.font:
+        # Instructions
+        font = pygame.font.Font(None, 16)
+        text = font.render("ZQSD - Click for rockets - G for grenades - Space to jump", True, (0, 0, 0))
+        textpos = text.get_rect(centerx=gamemanager.screen_width * 2/5, y=0, width=gamemanager.screen_width * 4/5, height=50)
+        gamemanager.screen.blit(text, textpos)
+
+        # Wind arrow
+        arrow_center_pos = pygame.Vector2(gamemanager.screen_width - gamemanager.wind_arrow_max_length / 2, gamemanager.wind_arrow_max_length / 2)
+        arrow_length = (gamemanager.wind.magnitude() / 3) * gamemanager.wind_arrow_max_length
+        normalized_wind = gamemanager.wind.normalize()
+        pygame.draw.line(gamemanager.screen, pygame.Color("purple"), arrow_center_pos + normalized_wind * arrow_length / 2, arrow_center_pos - normalized_wind * arrow_length / 2)
+
+        wind_normal = pygame.Vector2(-gamemanager.wind.y, gamemanager.wind.x).normalize() * 3
+        pygame.draw.polygon(gamemanager.screen, pygame.Color("purple"), [
+            arrow_center_pos + wind_normal,
+            arrow_center_pos + normalized_wind * arrow_length / 2,
+            arrow_center_pos - wind_normal
+        ])
+
 # Setup game window
 pygame.init()
 pygame.display.set_caption("Game Window")
@@ -46,6 +67,7 @@ while game_loop_running:
     for team in gamemanager.teams:
         team.draw(gamemanager.screen)
     gamemanager.neutral_gameobjects.draw(gamemanager.screen)
+    drawUI()
 
     # Players loop
     for team in gamemanager.teams:

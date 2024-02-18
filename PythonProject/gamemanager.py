@@ -28,13 +28,16 @@ maximum_charge = 500
 explosions_duration = .5
 rocket_max_damage = 600
 rocket_max_force = 500
-rocket_explosion_radius = 100
+rocket_explosion_radius = 50
 rocket_friction_mod = 0.1
 grenade_max_damage = 1100
 grenade_max_force = 100
-grenade_explosion_radius = 50
+grenade_explosion_radius = 100
 grenade_friction_mod = 0.1
 grenade_nb_of_seconds_before_explosion = 2
+
+# UI
+wind_arrow_max_length = 100
 
 def resetWind():
     global wind
@@ -51,6 +54,7 @@ def initGame():
     #         worm.image.fill(teamColor)
 
     teams[0].sprites()[0].controlled = True
+    resetWind()
 
 def nextTurn():
     # Check game ending conditions
