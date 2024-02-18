@@ -1,6 +1,7 @@
 import math
 import pygame
 import gamemanager
+from animate import AnimatePlayer as animate
 
 # Default unit in pygame is technically the pixel. Multiply gravity by 32 so the physics Math isn't as macro-scale.
 GRAVITY = pygame.Vector2(0, 9.8 * 32)
@@ -67,6 +68,7 @@ class Worm(PhysicsObject):
         self.image = pygame.Surface((32, 32))
         self.image.fill(pygame.Color("brown"))
         self.rect = self.image.get_rect(topleft=(x, y))
+        self.animate = animate(self.rect.x, self.rect.y)
         self.grounded = False
         self.controlled = False
         self.chargeTime = -1
@@ -111,10 +113,13 @@ class Worm(PhysicsObject):
                 # Move left and right
                 if keys[pygame.K_LEFT] or keys[pygame.K_q]:
                     self.velocity.x = -100
+                    self.animate.walking("left")
                 elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
                     self.velocity.x = 100
+                    self.animate.walking("right")
                 else:
                     self.velocity.x = 0
+                    self.animate.walking("idle")
                 # Jump
                 if keys[pygame.K_SPACE]:
                     self.velocity.y -= 250
@@ -127,6 +132,10 @@ class Worm(PhysicsObject):
 
 
         self.grounded = False
+        
+        # Animate the worms
+        self.animate.update()
+        self.image = self.animate.image
 
         super().update()
 

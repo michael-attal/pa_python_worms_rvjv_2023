@@ -45,10 +45,10 @@ def resetWind():
 
 # Game-managing methods
 def initGame():
-    for team in teams:
-        teamColor = pygame.Color(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-        for worm in team:
-            worm.image.fill(teamColor)
+    # for team in teams:
+    #     teamColor = pygame.Color(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+    #     for worm in team:
+    #         worm.image.fill(teamColor)
 
     teams[0].sprites()[0].controlled = True
 

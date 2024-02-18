@@ -12,6 +12,9 @@ pygame.display.set_caption("Game Window")
 fps_limit = 60
 
 # Setup game
+background = pygame.image.load("./Assets/background.jpg")
+backgroundRect = background.get_rect()
+backgroundRect.left, backgroundRect.top = 0, 0
 worm1 = physicsobject.Worm(gamemanager.screen_width / 4, 10)
 team1_sprites = pygame.sprite.Group()
 team1_sprites.add(worm1)
@@ -38,6 +41,7 @@ while game_loop_running:
 
     # Rendering (Base: White screen)
     gamemanager.screen.fill((255, 255, 255))
+    gamemanager.screen.blit(background, backgroundRect)
     gamemanager.terrain.draw(gamemanager.screen)
     for team in gamemanager.teams:
         team.draw(gamemanager.screen)
