@@ -1,7 +1,10 @@
+import math
 import pygame
 import gamemanager
+from animate import AnimatePlayer as animate
 
-GRAVITY = pygame.Vector2(0, 9.8)
+# Default unit in pygame is technically the pixel. Multiply gravity by 32 so the physics Math isn't as macro-scale.
+GRAVITY = pygame.Vector2(0, 9.8 * 32)
 
 class PhysicsObject(pygame.sprite.Sprite):
     def _getPosition(self):
@@ -9,7 +12,7 @@ class PhysicsObject(pygame.sprite.Sprite):
 
     position = property(_getPosition)
 
-    def __init__(self, x, y, frictionmod=0.01):
+    def __init__(self, x, y, frictionmod=0.1):
         super().__init__()
         self.velocity = pygame.Vector2(0, 0)
         self.rect.x = x
@@ -31,12 +34,12 @@ class PhysicsObject(pygame.sprite.Sprite):
 
         if self.rect.y < 0:
             self.rect.y = 0
-        elif self.rect.y > h - self.rect.width: # why not self.rect.height ?
-            self.rect.y = h - self.rect.width
+        elif self.rect.y > h - self.rect.height:
+            self.rect.y = h - self.rect.height
             self.velocity.y = 0
 
-        self.velocity += GRAVITY
-        self.velocity *= 1 - self.frictionmod
+        self.velocity += GRAVITY * (pygame.time.Clock.get_time(gamemanager.clock) / 1000.0)
+        self.velocity -= (self.velocity * self.frictionmod) * (pygame.time.Clock.get_time(gamemanager.clock) / 1000.0)
 
     def handleCollision(self, platform):
         if (self.velocity.y > 0):
@@ -59,10 +62,12 @@ class PhysicsObject(pygame.sprite.Sprite):
 
 class Worm(PhysicsObject):
 
-    def __init__(self, x, y):
-        self.image = pygame.Surface((32, 32))
-        self.image.fill(pygame.Color("brown"))
+    def __init__(self, x, y, color):
+        self.health = gamemanager.worm_base_hp
+
+        self.image = pygame.Surface((gamemanager.worm_size, gamemanager.worm_size))
         self.rect = self.image.get_rect(topleft=(x, y))
+        self.animate = animate(self.rect.x, self.rect.y, color)
         self.grounded = False
         self.controlled = False
         self.chargeTime = -1
@@ -70,19 +75,67 @@ class Worm(PhysicsObject):
         super().__init__(x, y)
 
     def update(self):
-        if self.controlled:
-            keys = pygame.key.get_pressed()
-            if keys[pygame.K_LEFT] or keys[pygame.K_q]:
-                self.velocity.x = -100
-            elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-                self.velocity.x = 100
-            else:
-                self.velocity.x = 0
 
-            if keys[pygame.K_SPACE] and self.grounded:
-                self.velocity.y -= 250
+        if self.health != gamemanager.worm_base_hp:
+            pygame.draw.rect(gamemanager.screen, pygame.Color("red"), (self.rect.x, self.rect.y - 20, self.rect.width, 10))
+            pygame.draw.rect(gamemanager.screen, pygame.Color("green"), (self.rect.x, self.rect.y - 20, (self.health / gamemanager.worm_base_hp) * self.rect.width, 10))
+
+            if self.health <= 0:
+                self.kill()
+
+        if self.chargeTime != -1:
+            pos0 = self.position + self.shootDirection * self.rect.width
+            f0 = self.shootDirection * min((((pygame.time.get_ticks() - self.chargeTime) / 1000) / gamemanager.maximum_charge_time) * gamemanager.maximum_charge, gamemanager.maximum_charge)
+
+            posList = []
+            for t in range(0, 1000):
+                t /= 100
+                posList.append(pygame.Vector2(
+                    pos0.x + f0.x / gamemanager.rocket_friction_mod * (1 - math.exp(-gamemanager.rocket_friction_mod * t)),
+                    pos0.y + ((f0.y / gamemanager.rocket_friction_mod) - (GRAVITY.y / (gamemanager.rocket_friction_mod ** 2))) * (1 - math.exp(-gamemanager.rocket_friction_mod * t)) + (GRAVITY.y * t) / gamemanager.rocket_friction_mod
+                ))
+
+            pygame.draw.lines(gamemanager.screen, pygame.Color("red"), False, posList)
+
+        if self.controlled:
+            # Draw "controlled" arrow
+            pygame.draw.polygon(gamemanager.screen, pygame.Color("black"),[
+                pygame.Vector2(self.position.x, self.rect.y),
+                pygame.Vector2(self.position.x + self.rect.width / 4, self.rect.y - 10),
+                pygame.Vector2(self.position.x - self.rect.width / 4, self.rect.y - 10)
+            ])
+
+            keys = pygame.key.get_pressed()
+            # Ground controls
+            if self.grounded:
+                # Move left and right
+                if keys[pygame.K_LEFT] or keys[pygame.K_q]:
+                    self.velocity.x = -100
+                    self.animate.walking("left")
+                elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+                    self.velocity.x = 100
+                    self.animate.walking("right")
+                else:
+                    self.velocity.x = 0
+                    self.animate.walking("idle")
+                # Jump
+                if keys[pygame.K_SPACE]:
+                    self.velocity.y -= 250
+            # Air controls (Uncomment if I get a proper parachute working in time
+            else:
+                if keys[pygame.K_p]:
+                    pygame.draw.circle(gamemanager.screen, pygame.Color("gray"), [self.rect.x + self.rect.width / 2, self.rect.y - 10], self.rect.width / 2, draw_top_left=True, draw_top_right=True)
+                    # Archimedes just doesn't fit this use case. Still leaving it in the code so I can talk about the equation with the Math teacher
+                    # archimedes = (math.pi * ((self.rect.width / 2) ** 2) / 2) * gamemanager.air_volumetric_pressure * GRAVITY
+                    drag = ((gamemanager.air_volumetric_pressure * 0.01 * self.rect.width) / 2) * (max(0, self.velocity.y) ** 2)
+                    self.velocity += pygame.Vector2(0, -1) * drag * (pygame.time.Clock.get_time(gamemanager.clock) / 1000.0)
+
 
         self.grounded = False
+        
+        # Animate the worms
+        self.animate.update()
+        self.image = self.animate.image
 
         super().update()
 
@@ -91,6 +144,7 @@ class Worm(PhysicsObject):
         self.grounded = True
 
     def handleEvent(self, event):
+
         # Rocket event (Right or left click)
         if self.controlled and event.type == pygame.MOUSEBUTTONDOWN:
             self.chargeTime = pygame.time.get_ticks()
@@ -98,9 +152,10 @@ class Worm(PhysicsObject):
             self.controlled = False
         if event.type == pygame.MOUSEBUTTONUP and self.chargeTime != -1:
             rocket_pos = self.position + self.shootDirection * self.rect.width
-            force = (((pygame.time.get_ticks() - self.chargeTime) / 1000) / gamemanager.maximum_charge_time) * gamemanager.maximum_charge
+            force = min((((pygame.time.get_ticks() - self.chargeTime) / 1000) / gamemanager.maximum_charge_time) * gamemanager.maximum_charge, gamemanager.maximum_charge)
             gamemanager.neutral_gameobjects.add(Rocket(rocket_pos.x, rocket_pos.y, self.shootDirection * force))
             self.chargeTime = -1
+
         # Grenade event (press G)
         if self.controlled and event.type == pygame.KEYDOWN and event.key == pygame.K_g:
             self.chargeTime = pygame.time.get_ticks()
@@ -114,14 +169,14 @@ class Worm(PhysicsObject):
 
 class Rocket(PhysicsObject):
 
-    explode_time = -1
-
     def __init__(self, x, y, velocity):
         self.image = pygame.Surface((8, 8))
         self.image.fill(pygame.Color("red"))
         self.rect = self.image.get_rect(topleft=(x, y))
         super().__init__(x, y)
         self.velocity = velocity
+        self.frictionmod = gamemanager.rocket_friction_mod
+        self.explode_time = -1
 
 
     def update(self):
@@ -147,11 +202,13 @@ class Rocket(PhysicsObject):
 
             for team in gamemanager.teams:
                 for worm in team:
-                    center_pos = pygame.Vector2(self.rect.center[0], self.rect.center[1])
+                    center_pos = self.position
                     eff_radius = worm.calculateEffectiveRadius(center_pos)
-                    worm_center_pos = pygame.Vector2(worm.rect.center[0], worm.rect.center[1])
+                    worm_center_pos = worm.position
                     if gamemanager.rocket_explosion_radius + eff_radius > center_pos.distance_to(worm_center_pos):
-                        worm.kill()
+                        rangeCoef = 1 - center_pos.distance_to(worm_center_pos) / (gamemanager.rocket_explosion_radius + eff_radius)
+                        worm.health -= rangeCoef * gamemanager.rocket_max_damage
+                        worm.velocity += rangeCoef * gamemanager.rocket_max_force * (worm_center_pos - center_pos).normalize()
 
 class Grenade(PhysicsObject):
     def __init__(self, x, y, velocity):
@@ -160,16 +217,28 @@ class Grenade(PhysicsObject):
         self.rect = self.image.get_rect(topleft=(x, y))
         super().__init__(x, y)
         self.velocity = velocity
+        self.frictionmod = gamemanager.grenade_friction_mod
+        self.explode_time = -1
         self.bounciness = gamemanager.grenade_bounciness
-        self.explode_time = pygame.time.get_ticks()
+        self.thrown_time = pygame.time.get_ticks()
 
     def update(self):
         backup_velocity_x = self.velocity.x
         backup_velocity_y = self.velocity.y
         super().update()
 
-        # Check if the timer has expired
-        if pygame.time.get_ticks() - self.explode_time > gamemanager.grenade_nb_of_seconds_before_explosion * 1000:
+        if self.explode_time != -1:
+            self.velocity = pygame.Vector2(0, 0)
+            time_since_explosion = pygame.time.get_ticks() - self.explode_time
+            if time_since_explosion / 1000.0 > gamemanager.explosions_duration:
+                self.kill()
+                gamemanager.nextTurn()
+                return
+            pygame.draw.circle(gamemanager.screen, pygame.Color("orange"), self.position, (1 - ((time_since_explosion / 1000.0) / gamemanager.explosions_duration)) * gamemanager.grenade_explosion_radius)
+
+
+        # Check if the grenade hasn't already exploded and the timer has expired
+        if self.explode_time == -1 and pygame.time.get_ticks() - self.thrown_time > gamemanager.grenade_nb_of_seconds_before_explosion * 1000:
             self.explode()
 
         # Bounce off walls. Comment it out if you prefer to only block grenades from hitting the wall.
@@ -186,17 +255,17 @@ class Grenade(PhysicsObject):
                     self.handleCollision(worm)
 
     def explode(self):
-        self.kill()
-        explosion_radius = gamemanager.grenade_explosion_radius
-        pygame.draw.circle(gamemanager.screen, pygame.Color("orange"), self.position, explosion_radius)
+        self.explode_time = pygame.time.get_ticks();
+        self.image = pygame.Surface((0, 0));
         for team in gamemanager.teams:
             for worm in team:
                 center_pos = pygame.Vector2(self.rect.center[0], self.rect.center[1])
                 eff_radius = worm.calculateEffectiveRadius(center_pos)
                 worm_center_pos = pygame.Vector2(worm.rect.center[0], worm.rect.center[1])
                 if gamemanager.grenade_explosion_radius + eff_radius > center_pos.distance_to(worm_center_pos):
-                    worm.kill()
-        gamemanager.nextTurn()
+                    rangeCoef = 1 - center_pos.distance_to(worm_center_pos) / (gamemanager.grenade_explosion_radius + eff_radius)
+                    worm.health -= rangeCoef * gamemanager.grenade_max_damage
+                    worm.velocity += rangeCoef * gamemanager.grenade_max_force * (worm_center_pos - center_pos).normalize()
 
     def handleCollision(self, collided_with):
         bounciness = getattr(collided_with, 'bounciness', 1)  # if bounciness doesn't exist set 1 by default
@@ -210,7 +279,8 @@ class Grenade(PhysicsObject):
         # Grenade collided with the platform, so I need to adjust its bounciness since 0.1 is not satisfactory to me.
         else:
             self.velocity.y *= -1 * bounciness * self.bounciness * 5
-            self.velocity.x *= -1 * bounciness * self.bounciness * 5
+            # We only have a horizontal plateform for now, so the grenade will never bounce horizontally.
+            # self.velocity.x *= -1 * bounciness * self.bounciness * 5
 
     def adjust_position_after_collision(self, collided_with):
         # Calculation of the position difference between the center of the Grenade and the object with which it collides.
