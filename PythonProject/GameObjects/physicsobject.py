@@ -99,6 +99,7 @@ class Worm(PhysicsObject):
             ])
 
             keys = pygame.key.get_pressed()
+            # Ground controls
             if self.grounded:
                 # Move left and right
                 if keys[pygame.K_LEFT] or keys[pygame.K_q]:
@@ -110,6 +111,12 @@ class Worm(PhysicsObject):
                 # Jump
                 if keys[pygame.K_SPACE]:
                     self.velocity.y -= 250
+            #Air controls
+            else:
+                if keys[pygame.K_SPACE]:
+                    pygame.draw.circle(gamemanager.screen, pygame.Color("gray"), [self.rect.x + self.rect.width / 2, self.rect.y - 10], self.rect.width / 2, draw_top_left=True, draw_top_right=True)
+
+                    self.velocity -= ((math.pi * (self.rect.width ** 2) / 2) * gamemanager.air_volumetric_pressure * GRAVITY) * pygame.time.Clock.get_time(gamemanager.clock) / 1000
 
         self.grounded = False
 

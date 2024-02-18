@@ -4,22 +4,32 @@ import random
 import pygame
 
 # General game options
+
+# Technical assists
 screen_size = screen_width, screen_height = 600, 400
 screen = pygame.display.set_mode(screen_size)
+clock = pygame.time.Clock()
+air_volumetric_pressure = 1.293
+
+# Game state trackers
 teams = []
 neutral_gameobjects = pygame.sprite.Group()
 terrain = pygame.sprite.Group()
-clock = pygame.time.Clock()
 wind = pygame.Vector2(0, 0)
+
+# Worms
 worm_bounciness = 1
 grenade_bounciness = 1
 maximum_charge_time = 1
 maximum_charge = 500
-rocket_explosion_radius = 100
+
+# Explosives / Projectiles
 explosions_duration = .5
+rocket_explosion_radius = 100
 grenade_explosion_radius = 50
 grenade_nb_of_seconds_before_explosion = 2
 
+# Game-managing methods
 def initGame():
     for team in teams:
         teamColor = pygame.Color(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
