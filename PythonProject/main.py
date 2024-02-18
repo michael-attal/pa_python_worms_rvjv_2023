@@ -22,7 +22,7 @@ gamemanager.teams.append(team1_sprites)
 gamemanager.teams.append(team2_sprites)
 gamemanager.terrain.add(platform.Platform(0, gamemanager.screen_height - 30, gamemanager.screen_width, 30))
 
-gamemanager.nextTurn()
+gamemanager.initGame()
 
 game_loop_running = True
 while game_loop_running:

@@ -1,3 +1,5 @@
+import math
+
 import pygame
 import gamemanager
 
@@ -31,8 +33,8 @@ class PhysicsObject(pygame.sprite.Sprite):
 
         if self.rect.y < 0:
             self.rect.y = 0
-        elif self.rect.y > h - self.rect.width: # why not self.rect.height ?
-            self.rect.y = h - self.rect.width
+        elif self.rect.y > h - self.rect.height:
+            self.rect.y = h - self.rect.height
             self.velocity.y = 0
 
         self.velocity += GRAVITY
@@ -70,17 +72,44 @@ class Worm(PhysicsObject):
         super().__init__(x, y)
 
     def update(self):
-        if self.controlled and self.grounded:
-            keys = pygame.key.get_pressed()
-            if keys[pygame.K_LEFT] or keys[pygame.K_q]:
-                self.velocity.x = -100
-            elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-                self.velocity.x = 100
-            else:
-                self.velocity.x = 0
 
-            if keys[pygame.K_SPACE]:
-                self.velocity.y -= 250
+# Uncomment if at some point I figure out why the equation is completely f*cked up...
+
+#        if self.chargeTime != -1:
+#            pos0 = self.position + self.shootDirection * self.rect.width
+#            f0 = self.shootDirection * min((((pygame.time.get_ticks() - self.chargeTime) / 1000) / gamemanager.maximum_charge_time) * gamemanager.maximum_charge, gamemanager.maximum_charge)
+#            print(f0)
+#
+#            posList = []
+#            for t in range(0, 1000):
+#                t /= 100
+#                posList.append(pygame.Vector2(
+#                    pos0.x + f0.x / 0.99 * (1 - math.exp(-0.99 * t)),
+#                    pos0.y + ((f0.y / 0.99) - (GRAVITY.y / 0.9801)) * (1 - math.exp(-0.99 * t)) + (GRAVITY.y * t) / 0.99
+#                ))
+#
+#            pygame.draw.lines(gamemanager.screen, pygame.Color("red"), False, posList)
+
+        if self.controlled:
+            # Draw "controlled" arrow
+            pygame.draw.polygon(gamemanager.screen, pygame.Color("black"),[
+                pygame.Vector2(self.position.x, self.rect.y),
+                pygame.Vector2(self.position.x + self.rect.width / 4, self.rect.y - 10),
+                pygame.Vector2(self.position.x - self.rect.width / 4, self.rect.y - 10)
+            ])
+
+            keys = pygame.key.get_pressed()
+            if self.grounded:
+                # Move left and right
+                if keys[pygame.K_LEFT] or keys[pygame.K_q]:
+                    self.velocity.x = -100
+                elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+                    self.velocity.x = 100
+                else:
+                    self.velocity.x = 0
+                # Jump
+                if keys[pygame.K_SPACE]:
+                    self.velocity.y -= 250
 
         self.grounded = False
 
@@ -91,6 +120,7 @@ class Worm(PhysicsObject):
         self.grounded = True
 
     def handleEvent(self, event):
+
         # Rocket event (Right or left click)
         if self.controlled and event.type == pygame.MOUSEBUTTONDOWN:
             self.chargeTime = pygame.time.get_ticks()
@@ -98,9 +128,10 @@ class Worm(PhysicsObject):
             self.controlled = False
         if event.type == pygame.MOUSEBUTTONUP and self.chargeTime != -1:
             rocket_pos = self.position + self.shootDirection * self.rect.width
-            force = (((pygame.time.get_ticks() - self.chargeTime) / 1000) / gamemanager.maximum_charge_time) * gamemanager.maximum_charge
+            force = min((((pygame.time.get_ticks() - self.chargeTime) / 1000) / gamemanager.maximum_charge_time) * gamemanager.maximum_charge, gamemanager.maximum_charge)
             gamemanager.neutral_gameobjects.add(Rocket(rocket_pos.x, rocket_pos.y, self.shootDirection * force))
             self.chargeTime = -1
+
         # Grenade event (press G)
         if self.controlled and event.type == pygame.KEYDOWN and event.key == pygame.K_g:
             self.chargeTime = pygame.time.get_ticks()
