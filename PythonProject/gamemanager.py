@@ -34,6 +34,13 @@ grenade_max_force = 100
 grenade_explosion_radius = 50
 grenade_nb_of_seconds_before_explosion = 2
 
+def resetWind():
+    global wind
+    angleRad = random.random() * 2 * math.pi
+    wind = pygame.Vector2(math.cos(angleRad), math.sin(angleRad))
+    wind *= random.random() * 5.0
+
+
 # Game-managing methods
 def initGame():
     for team in teams:
@@ -66,10 +73,7 @@ def nextTurn():
     # Give turn to next worm
     teams[0].sprites()[0].controlled = True
 
-    # Determine wind direction
-    angleRad = random.random() * 2 * math.pi
-    wind = pygame.Vector2(math.cos(angleRad), math.sin(angleRad))
-    wind *= random.random() * 5.0
+    resetWind()
 
 
 def finishGame():
