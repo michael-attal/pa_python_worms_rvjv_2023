@@ -1,7 +1,6 @@
 import sys
 import pygame
 import gamemanager
-from GameObjects import physicsobject
 from Environment import platform
 
 def drawUI():
@@ -23,7 +22,12 @@ def drawUI():
             arrow_center_pos + wind_normal,
             arrow_center_pos + normalized_wind * arrow_length / 2,
             arrow_center_pos - wind_normal
-        ])
+    ])
+
+
+# Ask for parameters
+num_teams = int(input("How many teams?"))
+num_worms = int(input("How many worms per team?"))
 
 # Setup game window
 pygame.init()
@@ -36,17 +40,10 @@ fps_limit = 60
 background = pygame.image.load("./Assets/background.jpg")
 backgroundRect = background.get_rect()
 backgroundRect.left, backgroundRect.top = 0, 0
-worm1 = physicsobject.Worm(gamemanager.screen_width / 4, 10)
-team1_sprites = pygame.sprite.Group()
-team1_sprites.add(worm1)
-worm2 = physicsobject.Worm(3 * gamemanager.screen_width / 4, 10)
-team2_sprites = pygame.sprite.Group()
-team2_sprites.add(worm2)
-gamemanager.teams.append(team1_sprites)
-gamemanager.teams.append(team2_sprites)
+
 gamemanager.terrain.add(platform.Platform(0, gamemanager.screen_height - 30, gamemanager.screen_width, 30))
 
-gamemanager.initGame()
+gamemanager.initGame(num_teams, num_worms)
 
 game_loop_running = True
 while game_loop_running:

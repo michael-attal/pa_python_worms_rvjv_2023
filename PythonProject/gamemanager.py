@@ -1,7 +1,8 @@
 import math
 import random
-
 import pygame
+
+from GameObjects import physicsobject
 
 # General game options
 
@@ -18,6 +19,7 @@ terrain = pygame.sprite.Group()
 wind = pygame.Vector2(0, 0)
 
 # Worms
+worm_size = 32
 worm_base_hp = 1000
 worm_bounciness = 1
 grenade_bounciness = 1
@@ -47,11 +49,14 @@ def resetWind():
 
 
 # Game-managing methods
-def initGame():
-    # for team in teams:
-    #     teamColor = pygame.Color(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-    #     for worm in team:
-    #         worm.image.fill(teamColor)
+def initGame(num_teams, num_worms):
+    for i in range(num_teams):
+        teamColor = pygame.Color(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+        team = pygame.sprite.Group()
+        for j in range(num_worms):
+            worm = physicsobject.Worm(random.randint(0, screen_width - worm_size), random.randint(0, screen_height // 2), teamColor)
+            team.add(worm)
+        teams.append(team)
 
     teams[0].sprites()[0].controlled = True
     resetWind()

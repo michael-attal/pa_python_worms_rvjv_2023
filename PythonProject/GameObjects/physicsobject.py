@@ -62,13 +62,12 @@ class PhysicsObject(pygame.sprite.Sprite):
 
 class Worm(PhysicsObject):
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, color):
         self.health = gamemanager.worm_base_hp
 
-        self.image = pygame.Surface((32, 32))
-        self.image.fill(pygame.Color("brown"))
+        self.image = pygame.Surface((gamemanager.worm_size, gamemanager.worm_size))
         self.rect = self.image.get_rect(topleft=(x, y))
-        self.animate = animate(self.rect.x, self.rect.y)
+        self.animate = animate(self.rect.x, self.rect.y, color)
         self.grounded = False
         self.controlled = False
         self.chargeTime = -1
@@ -124,11 +123,13 @@ class Worm(PhysicsObject):
                 if keys[pygame.K_SPACE]:
                     self.velocity.y -= 250
             # Air controls (Uncomment if I get a proper parachute working in time
-#            else:
-#                if keys[pygame.K_p]:
-#                    pygame.draw.circle(gamemanager.screen, pygame.Color("gray"), [self.rect.x + self.rect.width / 2, self.rect.y - 10], self.rect.width / 2, draw_top_left=True, draw_top_right=True)
-#                    archimedes = (math.pi * ((self.rect.width / 2) ** 2) / 2) * gamemanager.air_volumetric_pressure * GRAVITY
-#                    self.velocity -= archimedes
+            else:
+                if keys[pygame.K_p]:
+                    pygame.draw.circle(gamemanager.screen, pygame.Color("gray"), [self.rect.x + self.rect.width / 2, self.rect.y - 10], self.rect.width / 2, draw_top_left=True, draw_top_right=True)
+                    # Archimedes just doesn't fit this use case. Still leaving it in the code so I can talk about the equation with the Math teacher
+                    # archimedes = (math.pi * ((self.rect.width / 2) ** 2) / 2) * gamemanager.air_volumetric_pressure * GRAVITY
+                    drag = ((gamemanager.air_volumetric_pressure * 0.01 * self.rect.width) / 2) * (max(0, self.velocity.y) ** 2)
+                    self.velocity += pygame.Vector2(0, -1) * drag * (pygame.time.Clock.get_time(gamemanager.clock) / 1000.0)
 
 
         self.grounded = False
