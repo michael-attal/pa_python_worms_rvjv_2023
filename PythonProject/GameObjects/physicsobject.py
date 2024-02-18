@@ -3,7 +3,7 @@ import math
 import pygame
 import gamemanager
 
-GRAVITY = pygame.Vector2(0, 9.8)
+GRAVITY = pygame.Vector2(0, 9.8 * 32)
 
 class PhysicsObject(pygame.sprite.Sprite):
     def _getPosition(self):
@@ -11,7 +11,7 @@ class PhysicsObject(pygame.sprite.Sprite):
 
     position = property(_getPosition)
 
-    def __init__(self, x, y, frictionmod=0.01):
+    def __init__(self, x, y, frictionmod=0.1):
         super().__init__()
         self.velocity = pygame.Vector2(0, 0)
         self.rect.x = x
@@ -37,8 +37,8 @@ class PhysicsObject(pygame.sprite.Sprite):
             self.rect.y = h - self.rect.height
             self.velocity.y = 0
 
-        self.velocity += GRAVITY
-        self.velocity *= 1 - self.frictionmod
+        self.velocity += GRAVITY * (pygame.time.Clock.get_time(gamemanager.clock) / 1000.0)
+        self.velocity -= (self.velocity * self.frictionmod) * (pygame.time.Clock.get_time(gamemanager.clock) / 1000.0)
 
     def handleCollision(self, platform):
         if (self.velocity.y > 0):
@@ -84,20 +84,20 @@ class Worm(PhysicsObject):
 
         # Uncomment if at some point I figure out why the equation is completely f*cked up...
 
-#        if self.chargeTime != -1:
-#            pos0 = self.position + self.shootDirection * self.rect.width
-#            f0 = self.shootDirection * min((((pygame.time.get_ticks() - self.chargeTime) / 1000) / gamemanager.maximum_charge_time) * gamemanager.maximum_charge, gamemanager.maximum_charge)
-#            print(f0)
-#
-#            posList = []
-#            for t in range(0, 1000):
-#                t /= 100
-#                posList.append(pygame.Vector2(
-#                    pos0.x + f0.x / 0.99 * (1 - math.exp(-0.99 * t)),
-#                    pos0.y + ((f0.y / 0.99) - (GRAVITY.y / 0.9801)) * (1 - math.exp(-0.99 * t)) + (GRAVITY.y * t) / 0.99
-#                ))
-#
-#            pygame.draw.lines(gamemanager.screen, pygame.Color("red"), False, posList)
+        if self.chargeTime != -1:
+            pos0 = self.position + self.shootDirection * self.rect.width
+            f0 = self.shootDirection * min((((pygame.time.get_ticks() - self.chargeTime) / 1000) / gamemanager.maximum_charge_time) * gamemanager.maximum_charge, gamemanager.maximum_charge)
+            print(f0)
+
+            posList = []
+            for t in range(0, 1000):
+                t /= 100
+                posList.append(pygame.Vector2(
+                    pos0.x + f0.x / gamemanager.rocket_friction_mod * (1 - math.exp(-gamemanager.rocket_friction_mod * t)),
+                    pos0.y + ((f0.y / gamemanager.rocket_friction_mod) - (GRAVITY.y / (gamemanager.rocket_friction_mod ** 2))) * (1 - math.exp(-gamemanager.rocket_friction_mod * t)) + (GRAVITY.y * t) / gamemanager.rocket_friction_mod
+                ))
+
+            pygame.draw.lines(gamemanager.screen, pygame.Color("red"), False, posList)
 
         if self.controlled:
             # Draw "controlled" arrow
@@ -124,8 +124,10 @@ class Worm(PhysicsObject):
             else:
                 if keys[pygame.K_p]:
                     pygame.draw.circle(gamemanager.screen, pygame.Color("gray"), [self.rect.x + self.rect.width / 2, self.rect.y - 10], self.rect.width / 2, draw_top_left=True, draw_top_right=True)
+                    archimedes = (math.pi * ((self.rect.width / 2) ** 2) / 2) * gamemanager.air_volumetric_pressure * GRAVITY
+                    print(archimedes)
+                    self.velocity -= archimedes
 
-                    self.velocity -= ((math.pi * (self.rect.width ** 2) / 2) * gamemanager.air_volumetric_pressure * GRAVITY) * pygame.time.Clock.get_time(gamemanager.clock) / 1000
 
         self.grounded = False
 
@@ -167,6 +169,7 @@ class Rocket(PhysicsObject):
         self.rect = self.image.get_rect(topleft=(x, y))
         super().__init__(x, y)
         self.velocity = velocity
+        self.frictionmod = gamemanager.rocket_friction_mod
         self.explode_time = -1
 
 
@@ -208,6 +211,7 @@ class Grenade(PhysicsObject):
         self.rect = self.image.get_rect(topleft=(x, y))
         super().__init__(x, y)
         self.velocity = velocity
+        self.frictionmod = gamemanager.grenade_friction_mod
         self.explode_time = -1
         self.bounciness = gamemanager.grenade_bounciness
         self.thrown_time = pygame.time.get_ticks()

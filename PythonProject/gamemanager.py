@@ -29,9 +29,11 @@ explosions_duration = .5
 rocket_max_damage = 600
 rocket_max_force = 500
 rocket_explosion_radius = 100
+rocket_friction_mod = 0.1
 grenade_max_damage = 1100
 grenade_max_force = 100
 grenade_explosion_radius = 50
+grenade_friction_mod = 0.1
 grenade_nb_of_seconds_before_explosion = 2
 
 def resetWind():
