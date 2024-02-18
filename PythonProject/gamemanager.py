@@ -40,7 +40,7 @@ def resetWind():
     global wind
     angleRad = random.random() * 2 * math.pi
     wind = pygame.Vector2(math.cos(angleRad), math.sin(angleRad))
-    wind *= random.random() * 5.0
+    wind *= random.random() * 3.0
 
 
 # Game-managing methods

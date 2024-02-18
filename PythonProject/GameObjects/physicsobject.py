@@ -1,8 +1,8 @@
 import math
-
 import pygame
 import gamemanager
 
+# Default unit in pygame is technically the pixel. Multiply gravity by 32 so the physics Math isn't as macro-scale.
 GRAVITY = pygame.Vector2(0, 9.8 * 32)
 
 class PhysicsObject(pygame.sprite.Sprite):
@@ -82,8 +82,6 @@ class Worm(PhysicsObject):
             if self.health <= 0:
                 self.kill()
 
-        # Uncomment if at some point I figure out why the equation is completely f*cked up...
-
         if self.chargeTime != -1:
             pos0 = self.position + self.shootDirection * self.rect.width
             f0 = self.shootDirection * min((((pygame.time.get_ticks() - self.chargeTime) / 1000) / gamemanager.maximum_charge_time) * gamemanager.maximum_charge, gamemanager.maximum_charge)
@@ -120,13 +118,12 @@ class Worm(PhysicsObject):
                 # Jump
                 if keys[pygame.K_SPACE]:
                     self.velocity.y -= 250
-            #Air controls
-            else:
-                if keys[pygame.K_p]:
-                    pygame.draw.circle(gamemanager.screen, pygame.Color("gray"), [self.rect.x + self.rect.width / 2, self.rect.y - 10], self.rect.width / 2, draw_top_left=True, draw_top_right=True)
-                    archimedes = (math.pi * ((self.rect.width / 2) ** 2) / 2) * gamemanager.air_volumetric_pressure * GRAVITY
-                    print(archimedes)
-                    self.velocity -= archimedes
+            # Air controls (Uncomment if I get a proper parachute working in time
+#            else:
+#                if keys[pygame.K_p]:
+#                    pygame.draw.circle(gamemanager.screen, pygame.Color("gray"), [self.rect.x + self.rect.width / 2, self.rect.y - 10], self.rect.width / 2, draw_top_left=True, draw_top_right=True)
+#                    archimedes = (math.pi * ((self.rect.width / 2) ** 2) / 2) * gamemanager.air_volumetric_pressure * GRAVITY
+#                    self.velocity -= archimedes
 
 
         self.grounded = False
