@@ -18,6 +18,7 @@ terrain = pygame.sprite.Group()
 wind = pygame.Vector2(0, 0)
 
 # Worms
+worm_base_hp = 1000
 worm_bounciness = 1
 grenade_bounciness = 1
 maximum_charge_time = 1
@@ -25,7 +26,11 @@ maximum_charge = 500
 
 # Explosives / Projectiles
 explosions_duration = .5
+rocket_max_damage = 600
+rocket_max_force = 500
 rocket_explosion_radius = 100
+grenade_max_damage = 1100
+grenade_max_force = 100
 grenade_explosion_radius = 50
 grenade_nb_of_seconds_before_explosion = 2
 

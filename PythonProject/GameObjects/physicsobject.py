@@ -62,6 +62,8 @@ class PhysicsObject(pygame.sprite.Sprite):
 class Worm(PhysicsObject):
 
     def __init__(self, x, y):
+        self.health = gamemanager.worm_base_hp
+
         self.image = pygame.Surface((32, 32))
         self.image.fill(pygame.Color("brown"))
         self.rect = self.image.get_rect(topleft=(x, y))
@@ -73,7 +75,14 @@ class Worm(PhysicsObject):
 
     def update(self):
 
-# Uncomment if at some point I figure out why the equation is completely f*cked up...
+        if self.health != gamemanager.worm_base_hp:
+            pygame.draw.rect(gamemanager.screen, pygame.Color("red"), (self.rect.x, self.rect.y - 20, self.rect.width, 10))
+            pygame.draw.rect(gamemanager.screen, pygame.Color("green"), (self.rect.x, self.rect.y - 20, (self.health / gamemanager.worm_base_hp) * self.rect.width, 10))
+
+            if self.health <= 0:
+                self.kill()
+
+        # Uncomment if at some point I figure out why the equation is completely f*cked up...
 
 #        if self.chargeTime != -1:
 #            pos0 = self.position + self.shootDirection * self.rect.width
@@ -113,7 +122,7 @@ class Worm(PhysicsObject):
                     self.velocity.y -= 250
             #Air controls
             else:
-                if keys[pygame.K_SPACE]:
+                if keys[pygame.K_p]:
                     pygame.draw.circle(gamemanager.screen, pygame.Color("gray"), [self.rect.x + self.rect.width / 2, self.rect.y - 10], self.rect.width / 2, draw_top_left=True, draw_top_right=True)
 
                     self.velocity -= ((math.pi * (self.rect.width ** 2) / 2) * gamemanager.air_volumetric_pressure * GRAVITY) * pygame.time.Clock.get_time(gamemanager.clock) / 1000
@@ -184,11 +193,13 @@ class Rocket(PhysicsObject):
 
             for team in gamemanager.teams:
                 for worm in team:
-                    center_pos = pygame.Vector2(self.rect.center[0], self.rect.center[1])
+                    center_pos = self.position
                     eff_radius = worm.calculateEffectiveRadius(center_pos)
-                    worm_center_pos = pygame.Vector2(worm.rect.center[0], worm.rect.center[1])
+                    worm_center_pos = worm.position
                     if gamemanager.rocket_explosion_radius + eff_radius > center_pos.distance_to(worm_center_pos):
-                        worm.kill()
+                        rangeCoef = 1 - center_pos.distance_to(worm_center_pos) / (gamemanager.rocket_explosion_radius + eff_radius)
+                        worm.health -= rangeCoef * gamemanager.rocket_max_damage
+                        worm.velocity += rangeCoef * gamemanager.rocket_max_force * (worm_center_pos - center_pos).normalize()
 
 class Grenade(PhysicsObject):
     def __init__(self, x, y, velocity):
@@ -242,7 +253,9 @@ class Grenade(PhysicsObject):
                 eff_radius = worm.calculateEffectiveRadius(center_pos)
                 worm_center_pos = pygame.Vector2(worm.rect.center[0], worm.rect.center[1])
                 if gamemanager.grenade_explosion_radius + eff_radius > center_pos.distance_to(worm_center_pos):
-                    worm.kill()
+                    rangeCoef = 1 - center_pos.distance_to(worm_center_pos) / (gamemanager.grenade_explosion_radius + eff_radius)
+                    worm.health -= rangeCoef * gamemanager.grenade_explosion_radius
+                    worm.velocity += rangeCoef * gamemanager.grenade_max_force * (worm_center_pos - center_pos).normalize()
 
     def handleCollision(self, collided_with):
         bounciness = getattr(collided_with, 'bounciness', 1)  # if bounciness doesn't exist set 1 by default
